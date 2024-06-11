@@ -1,0 +1,11 @@
+Logging started at 12/09/2022 08:56:45
+Field: date-time type description
+
+DETAILS OF OPERATION
+
+[2022.09.12-08.56.51][INFO]Super Admin, David Login Successful
+[2022.09.12-08.57.08][WARN]Invalid Search Operation!
+[2022.09.12-09.40.47][INFO]Returned log files from Logs for viewing
+[2022.09.12-10.12.53][INFO]Returned records from Apartment Details.txt for viewing
+[2022.09.12-10.13.15][INFO]Returned records from Tenant Details.txt for viewing
+[2022.09.12-10.13.22][INFO]System exited, time elapsed: 4597.528084

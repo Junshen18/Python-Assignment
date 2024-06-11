@@ -1,0 +1,14 @@
+Logging started at 12/09/2022 16:21:50
+Field: date-time type description
+
+DETAILS OF OPERATION
+
+[2022.09.12-16.22.18][INFO]Super Admin, David Login Successful
+[2022.09.12-16.23.56][INFO]New records added to Tenant Details.txt
+[2022.09.12-16.24.28][INFO]Added new Admin Zhe Hong's Login Credentials to userfile.txt
+[2022.09.12-16.26.33][INFO]Returned log files from Logs for viewing
+[2022.09.12-16.27.05][INFO]Records modified in Tenant Details.txt
+[2022.09.12-16.27.33][INFO]Records modified in Apartment Details.txt
+[2022.09.12-16.27.48][INFO]Records modified in Tenant Details.txt
+[2022.09.12-16.28.12][INFO]Deleted records in Tenant Details.txt
+[2022.09.12-16.28.18][INFO]System exited, time elapsed: 387.926608

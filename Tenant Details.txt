@@ -1,0 +1,11 @@
+T1,Wong Jun Shen,19,18/08/2003,21/05/2018,Shah Alam,Selangor,sushi chef,Rakuzen
+T2,Soh Zhe Hong,19,21/05/2003,23/04/2019,Puchong,Selangor,none,none
+T3,Tan Wei Hup,19,24/11/2003,30/08/2019,Klang,Selangor,freelancer,none
+T4,Ho Rong Wei,19,10/01/2003,01/03/2020,Puchong,Selangor,promoter,Seforah
+T5,Ho Shuet Juin,19,22/05/2003,03/07/2021,Gawau,Sabah,none,none
+T6,Sia Jun Ian,19,26/05/2003,19/06/2021,Subang Jaya,Selangor,none,none
+T7,Andrew,21,17/01/2001,28/06/2021,USJ,Selangor,waiter,Mr. Lim
+T9,Emily,24,05/03/1998,21/03/2021,Kuala Selangor,Selangor,cashier,99 speedmart
+T10,Huppy,22,31/08/2000,18/06/2021,Putra Jaya,Kuala Lumpur,none,none
+T11,Zack,23,27/09/1999,24/07/2021,Sungai Buluh,Selangor,programmer,Ms. Kuan
+T12,LEI LOU MEI,21,06/09/2001,01/04/2022,MALAYSIA,SELANGOR,HAPPY BIRHTDYA,BYEBYE

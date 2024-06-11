@@ -1,0 +1,2134 @@
+PROGRAM assignment
+
+FUNCTION timer_end(time_elapsed):
+
+	DECLARE current_time AS DATETIME
+	SET current_time TO CURRENT DATE
+	total_time = current_time - time_elapsed
+	RETURN total_time IN SECONDS
+
+ENDFUNCTION
+
+FUNCTION createdirectory(directory):
+
+	IF directory EXISTS AT PATH THEN
+		PASS
+	ELSE
+		MAKE DIRECTORY directory
+	ENDIF
+	RETURN directory
+
+ENDFUNCTION
+
+FUNCTION createlogfile(directory, file_name):
+
+	DECLARE open_date AS DATETIME
+	DECLARE field, msg, file_path AS STRING
+	DECLARE log_header AS ARRAY
+	
+	SET open_date TO CURRENT DATE
+	CONVERT open_date INTO STRING AS open_date USING FORMAT ('Logging started at date/month/year hour:minute:second')
+	SET field TO 'Field: date-time type description'
+	SET msg TO 'DETAILS OF OPERATION'
+	SET log_header TO [open_date, field, msg]
+	SET file_path TO directory\file_name
+	
+	OPEN file_path IN APPEND MODE AS afile
+	FOR EACH item IN log_header
+		WRITE item TO afile
+	ENDFOR
+	
+	RETURN file_path
+
+ENDFUNCTION	
+
+FUNCTION log(file_path, log_type, description):
+	
+	DECLARE log_type, log_content AS STRING
+	DECLARE time AS DATETIME
+	
+	SET time TO CURRENT DATE
+	CONVERT time INTO STRING AS time USING FORMAT ('[year.month.day-hour.minute.second]')
+	SET log_type TO '[',log_type,']' WITH ALL UPPERCASE
+	SET log_content TO time CONCATENATE log_type AND description
+	
+	OPEN file_path IN APPEND MODE AS afile
+	WRITE log_content TO afile
+	
+ENDFUNCTION
+
+FUNCTION loading(duration)
+
+	DECLARE animation AS ARRAY
+	DECLARE starting_frame, frame_num, pause_time AS DECIMAL
+	
+	SET starting_frame TO 0
+	SET pause_time TO duration DIVIDE LENGTH OF animation
+	
+	SET animation TO [
+	"[             ]",
+	"[=            ]",
+	"[==           ]",
+	"[===          ]",
+	"[===l         ]",
+	"[===lo        ]",
+	"[===loa       ]",
+	"[===load      ]",
+	"[===loadi     ]",
+	"[===loadin    ]",
+	"[===loading   ]",
+	"[===loading=  ]",
+	"[===loading== ]",
+	"[===loading===]",
+	"[ ==loading===]",
+	"[  =loading===]",
+	"[   loading===]",
+	"[    oading===]",
+	"[     ading===]",
+	"[      ding===]",
+	"[       ing===]",
+	"[        ng===]",
+	"[         g===]",
+	"[          ===]",
+	"[           ==]",
+	"[            =]",
+	"[             ]",
+	"[             ]",
+	"[             ]",
+	]
+
+	DOWHILE True
+		frame_num = starting_frame MODULUS LENGTH OF animation
+		PRINT (animation[frame_num])
+		SLEEP FOR pause_time
+		starting_frame = starting_frame + 1
+		IF (starting_time MULTIPLY pause_time) EQUALS TO duration THEN
+			BREAK
+		ENDIF
+	ENDWHILE
+
+ENDFUNCTION
+
+FUNCTION confirm_prompt(message)
+
+	DECLARE user_input AS STRING
+	DECLARE options_for_yes, options_for_no AS ARRAY
+	
+	SET options_for_yes TO ["yes", "y"]
+	SET options_for_no TO ["no", "n"]
+	
+	DOWHILE True
+		PRINT message
+		GET user_input
+		
+		IF user_input IN options_for_yes THEN
+			RETURN True
+		ELSE IF user_input IN options_for_no THEN
+			RETURN False
+		ELSE
+			PRINT ("User Input is unrecognised, please try again")
+		ENDIF
+	ENDWHILE
+	
+ENDFUNCTION
+
+FUNCTION pause()
+
+	PRINT ("Press any key to continue...")
+
+ENDFUNCTION
+
+FUNCTION ValidateUser(name,password,userfile_path)
+
+	DECLARE tempRecord as ARRAY
+	DECLARE found AS BOOLEAN
+	SET found TO False
+
+	OPEN userfile_path IN READ MODE as uFile
+	FOR EACH record IN uFile
+		REMOVE TRAILING NEWLINES FROM record
+		CONVERT record INTO ARRAY as tempRecord USING "," AS A DELIMITER
+		IF tempRecord[1] EQUALS name AND tempRecord[2] EQUALS password THEN
+			found = True
+		ENDIF
+	ENDFOR
+
+  RETURN found
+
+END FUNCTION
+
+FUNCTION getUserData(file_path, username, password, column)
+
+	DECLARE users AS ARRAY
+	DECLARE data AS None
+	
+	users = CALL FUNCTION FiletoList(file_path)
+	FOR EACH record in users
+		IF username EQUALS TO record[0] AND password EQUALS TO record[1] THEN
+			data = record[column]
+			BREAK
+		ENDIF
+	ENDFOR
+	
+	RETURN data
+
+ENDFUNCTION
+
+FUNCTION Login(userfile_path, attempts_allowed)
+
+	DECLARE count AS DECIMAL
+	DECLARE ValidateStatus, flag AS BOOLEAN
+	DECLARE username, password, user, usertype AS STRING
+	SET count TO 0
+	SET VaidateStatus AS False
+	
+	DOWHILE count < attemps_allowed
+		PRINT ("Please enter username: ")
+		GET username
+		PRINT ("Please enter password: ")
+		GET password
+		flag = CALL FUNCTION ValidateUser(username, password, userfile_path)
+		
+		IF flag EQUALS TO True THEN
+			user = CALL FUNCTION getUserData(userfile_path, username, password, 2)
+			usertype = CALL FUNCTION getUserData(userfile_path, username, password, 3)
+			ValidateStatus = True
+			BREAK
+		ELSE
+			PRINT ("Invalid Login Credentials!")
+			count = count + 1
+			PRINT ("Remaining attempts: " CONCATENATE (attempts_allowed - count) CONVERTED TO STRING)
+		ENDIF
+	ENDWHILE
+	
+	RETURN ValidateStatus, user, usertype
+	
+ENDFUNCTION
+
+FUNCTION PasswordChecker(password)
+
+	DECLARE special_chars, overview AS STRING
+	DECLARE recommended_inputs, password_info AS ARRAY
+	DECLARE missing_types, index, repetition, error AS DECIMAL
+	DECLARE confirmation AS BOOLEAN
+	
+	SET special_chars TO "`~!@#$%^&*()_+-=[{]}\|;:\"'<>?"
+	SET recommended_inputs TO ["Lowercases", "Uppercases", "Special Characters", "Numbers"]
+	SET index TO 0
+	SET repetition TO 0
+	
+	FOR letter IN password
+		IF letter IS BETWEEN 'a' TO 'z' THEN
+			recommended_inputs REMOVE "Lowercases"
+			BREAK
+		ENDIF
+	ENDFOR
+	
+	FOR letter IN password
+		IF letter IS BETWEEN 'A' TO 'Z' THEN
+			recommended_inputs REMOVE "Uppercases"
+			BREAK
+		ENDIF
+	ENDFOR
+	
+	FOR letter IN password
+		IF letter IN special_chars THEN
+			recommended_inputs REMOVE "Special Characters"
+			BREAK
+		ENDIF
+	ENDFOR
+	
+	FOR letter IN password
+		IF ANY letter IS A DIGIT FOR letter IN password THEN
+			recommended_inputs REMOVE "Numbers"
+			BREAK
+		ENDIF
+	ENDFOR
+	
+	DOWHILE index SMALLER THAN LENGTH OF password
+		IF password[index] EQUALS TO password[index+1] EQUALS TO password[index+2] THEN
+			repetition = repetition + 1
+			index = index + 3
+		ELSE
+			index = index + 1
+		ENDIF
+	ENDWHILE
+	
+	SET missing_types TO LENGTH OF recommended_inputs
+	SET errors TO MAXIMUM VALUE BETWEEN recommended_inputs AND repetition
+	
+	IF repetition LARGER THAN 0 THEN
+		CONVERT repetition TO STRING AS repetition
+		repeated_chars = 'Repeated Characters:" CONCATENATE repetition
+		password_info APPEND repeated_chars
+	ENDIF
+	IF missing_types LARGER THAN 0 THEN
+		JOIN recommended_inputs TO STRING AS recommended_inputs USING ", " AS A SEPARATOR
+		missing_inputs = 'Missing types:" CONCATENATE recommended_inputs
+		password_info APPEND missing_inputs
+	ENDIF
+	
+	JOIN password_info TO STRING AS overview USING NEWLINES AS A SEPARATOR
+	
+	IF error EQUALS TO 0 THEN
+		PRINT ("Password Strength: Excellent")
+	ELSEIF error EQUALS TO 1 THEN
+		PRINT ("Password Strength: Good" CONCATENATE overview)
+	ELSEIF error EQUALS TO 2 THEN
+		PRINT ("Password Strength: Average" CONCATENATE overview)
+	ELSEIF error EQUALS TO 3 THEN
+		PRINT ("Password Strength: Below Average" CONCATENATE overview)
+	ELSE
+		PRINT ("Password Strength: Poor" CONCATENATE overview)
+	ENDIF
+	
+	confirmation = CALL FUNCTION confirm_prompt("Do you want to continue with current password? [Y] for Yes, [N] for No")
+	RETURN confirmation
+	
+ENDFUNCTION
+
+FUNCTION VerifyName(text)
+  
+	DECLARE invalid_char AS STRING
+	DECLARE flag AS BOOLEAN
+	SET invalid_char TO " !#$%&'()*+-/:;<=>?@[\]^_`{|}~"
+	SET flag TO False
+	IF text NOT EQUAL "" THEN
+		FOR EACH i IN invalid_char
+			FOR EACH z IN text
+				IF i EQUALS TO z THEN
+					flag = True
+					BREAK
+				ENDIF
+			ENDFOR
+		ENDFOR
+		IF flag EQUALS TO True THEN
+			PRINT ("Special Characters are restricted, please try again.")
+			RETURN False
+		ELSE
+			RETURN True
+		ENDIF
+	ELSE
+		PRINT ("Invalid Details! Please try again")
+		RETURN False
+	ENDIF
+	
+ENDFUNCTION
+
+FUNCTION VerifyDate(date)
+  
+	DECLARE current_date AS DATETIME
+	DECLARE day AS DECIMAL
+	
+	SET current_date TO CURRENT DATE
+	CONVERT date INTO DATETIME AS check_date FROM FORMAT ('date/month/year')
+	SPLIT date INTO dd, mm, yy USING "/" AS A DELIMITER
+	CONVERT dd, mm, yy TO INTEGER
+  
+	IF (mm EQUALS TO 1 OR mm EQUALS TO 3 OR mm EQUALS TO 5 OR mm EQUALS TO 7 OR mm EQUALS TO 8 OR mm EQUALS TO 10 OR mm EQUALS TO 12) THEN
+		days = 31
+	ELSEIF (mm EQUALS TO 4 OR mm EQUALS TO 6 OR mm EQUALS TO 9 OR mm EQUALS TO 11) THEN
+		days = 30
+	ELSEIF (mm EQUALS TO 2 AND yy MODULUS 4 EQUALS 0) THEN
+		days = 29
+	ELSEIF (mm EQUALS 2 AND yy MODULUS 4 NOT EQUAL 0) THEN
+		days = 28
+	ELSE
+		PRINT ("Month is Invalid!")
+		RETURN False
+	ENDIF
+  
+	IF (dd SMALLER THAN 1 OR dd GREATER THAN days) THEN
+		PRINT ("Day is Invalid!")
+		RETURN False
+	ENDIF
+   
+	IF check_date GREATER THAN current_date THEN
+		PRINT ("Date is Invalid!")
+		RETURN False
+	ELSE
+		RETURN True
+	ENDIF
+
+ENDFUNCTION
+
+FUNCTION VerifyMonth(month)
+
+	DECLARE data AS ARRAY
+	
+	SET data TO ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+	
+	IF month IN data THEN
+		RETURN True
+	ELSE
+		PRINT ("Invalid Details! Please try again by inputting months in their short-form! Eg. Jan")
+		RETURN False
+	ENDIF
+
+ENDFUNCTION
+
+FUNCTION VerifyPaymentStatus(text)
+
+	DECLARE status AS ARRAY
+	
+	SET status TO ["Paid", "Unpaid"]
+	
+	IF text NOT EQUAL TO "" THEN
+		IF text IN status THEN
+			RETURN True
+		ELSE
+			PRINT ("Invalid input! Only 'Paid' or 'Unpaid' is acceptable!")
+			RETURN False
+		ENDIF
+	ELSE
+		PRINT ("Invalid Details! Please try again")
+		RETURN False
+	ENDIF
+
+ENDFUNCTION
+
+FUNCTION countage(date_of_birth)
+
+	DECLARE birth_year, current_year AS DATETIME
+	DECLARE age AS DECIMAL
+
+	CONVERT date_of_birth INTO DATETIME AS birth_year FROM FORMAT ('date/month/year'))
+	SET current_year TO CURRENT YEAR
+	
+	age = current_year - birth_year
+	
+	RETURN age
+
+ENDFUNCTION
+
+FUNCTION getDateoutsideRange(text, compared_date, range)
+
+	DECLARE estimated_date AS STRING
+	DECLARE date1, date2 AS DATETIME
+	DECLARE difference AS DECIMAL
+	DECLARE outside_range AS BOOLEAN
+	
+	SET outside_range TO False
+	
+	DOWHILE True
+		estimated_date = CALL FUNCTION InputData(text, str, VerifyDate)
+		CONVERT estimated_date INTO DATETIME AS date1 FROM FORMAT ('date/month/year')
+		CONVERT compared_date INTO DATETIME AS date2 FROM FORMAT ('date/month/year')
+		SET difference TO (date1 MINUS date2)
+	
+		IF range LARGER THAN 0 THEN
+			IF difference LARGER THAN OR EQUAL range THEN
+				outside_range = True
+			ENDIF
+		ELSE
+			IF difference SMALLER THAN OR EQUAL range THEN
+				outside_range = True
+			ENDIF
+		ENDIF
+
+		IF outside_range EQUALS TO True THEN
+			RETURN estimated_date
+		ELSE
+			PRINT ("Date entered is not outside the defined range, please try again")
+		ENDIF
+	ENDWHILE
+
+ENDFUNCTION
+
+FUNCTION VerifyMatureMinor(date_of_birth)
+
+	DECLARE adult, date_verification AS BOOLEAN
+	DECLARE age AS DECIMAL
+	
+	SET adult TO False
+	date_verification = CALL FUNCTION VerifyDate(date_of_birth)
+	
+	IF date_verification EQUALS TO True THEN
+		age = CALL FUNCTION countage(date_of_birth)
+		IF age LARGER THAN OR EQUAL TO 18 THEN
+			adult = True
+		ELSE
+			PRINT ("Subject is still a minor!")
+		ENDIF
+	ENDIF
+	
+	RETURN adult
+	
+ENDFUNCTION
+
+FUNCTION VerifyDigits(number)
+
+	IF number CAN BE CONVERTED TO FLOAT THEN
+		RETURN True
+	ELSE
+		PRINT ("Invalid input! Please try again")
+		RETURN False
+
+ENDFUNCTION
+
+FUNCTION GetID(question, file_path, column)
+
+	DECLARE ID AS STRING
+	DECLARE data AS ARRAY
+	
+	DOWHILE True
+		ID = CALL FUNCTION InputData(question, str, VerifyName)
+		data = CALL FUNCTION SearchData(file_path, column, ID)
+		
+		IF LENGTH OF data LARGER THAN 0 OR ID EQUALS TO "none" THEN
+			RETURN ID
+		ELSE
+			PRINT ("ID does not exist, either enter [None] or a correct value")
+		ENDIF
+	ENDWHILE
+
+ENDFUNCTION
+
+FUNCTION getFilesfromDirectory(directory, *file_format)
+
+	DECLARE all_files, filtered_files AS ARRAY
+	
+	SET all_files TO GET LIST OF ALL FILES IN DIRECTORY directory
+	
+	FOR EACH file IN all_files
+		FOR EACH format IN file_format
+			IF file ENDS WITH format THEN
+				filtered_files APPEND file
+			ENDIF
+		ENDFOR
+	ENDFOR
+	
+	RETURN filtered_files
+
+ENDFUNCTION
+
+FUNCTION CheckDuplicateinFile(file_path, duplicate)
+
+	DECLARE recordexists AS BOOLEAN
+	SET recordexists TO False
+	
+	OPEN file_path IN READ MODE AS rfile
+	FOR EACH record IN rfile
+		REMOVE TRAILING NEWLINES FROM record
+		CONVERT record INTO ARRAY AS record USING ',' AS A DELIMITER
+		IF duplicate IN record THEN
+			recordexists = True
+			BREAK
+		ENDIF
+	ENDFOR
+	
+	RETURN recordexists
+
+ENDFUNCTION
+
+FUNCTION FiletoList(file_path)
+
+	DECLARE item_list, data AS ARRAY
+	
+	OPEN file_path IN READ MODE AS rfile
+	FOR EACH line IN rfile
+		REMOVE TRAILING NEWLINES FROM line
+		item_list APPEND line
+	ENDFOR
+
+	FOR EACH record IN item_list
+		CONVERT record INTO ARRAY AS record USING ',' AS A DELIMITER
+		data APPEND record
+	ENDFOR
+	
+	RETURN data
+	
+ENDFUNCTION
+
+FUNCTION OverwriteFile(file_path, new_file)
+
+	OPEN file_path IN WRITE MODE AS wfile
+	FOR EACH record IN new_file
+		JOIN record INTO STRING AS data USING ',' AS A SEPARATOR
+		WRITE data TO wfile
+	ENDFOR
+
+ENDFUNCTION
+
+FUNCTION ModifyRecord(file_path, column, key, replacement_data)
+
+	DECLARE mList AS ARRAY
+
+	mlist = CALL FUNCTION FiletoList(file_path)
+	FOR index, data IN ENUMERATE mlist
+		IF data[0] EQUALS TO key THEN
+			data[column] = replacement_data
+			mlist[index] = data
+			BREAK
+		ENDIF
+	ENDFOR
+	
+	CALL FUNCTION OverwriteFile(file_path, mlist)
+
+ENDFUNCTION
+
+FUNCTION SaveData(data, file_path)
+
+	JOIN data INTO STRING AS data USING ',' AS A SEPARATOR
+	
+	OPEN file_path IN APPEND MODE AS afile
+	WRITE data TO afile
+
+ENDFUNCTION
+
+FUNCTION SearchData (file_path, column, keyword)
+
+	DECLARE file, file_items AS ARRAY
+	
+	file = CALL FUNCTION FiletoList(file_path)
+	
+	FOR EACH record IN file
+		IF keyword IN record[column] AND LENGTH OF key EQUAL TO LENGTH OF record[column] THEN
+			file_items APPEND record
+		ENDIF
+	ENDFOR
+	
+	RETURN file_items
+	
+ENDFUNCTION
+
+FUNCTION DeleteData(file_path, keyword, column)
+
+	DECLARE item_list AS ARRAY
+	DECLARE del_item AS STRING
+
+	item_list = CALL FUNCTION FiletoList(file_path)
+	
+	FOR index, data IN ENUMERATE item_list
+		IF data[column] EQUALS TO keyword THEN
+			del_item = item_list[index]
+			item_list REMOVE del_item
+			BREAK
+		ENDIF
+	ENDFOR
+	
+	CALL FUNCTION OverwriteFile(file_path, item_list)
+
+ENDFUNCTION
+
+FUNCTION MoveRecordtoFile(file_path, keyword, newfile_path)
+
+	DECLARE item_list AS ARRAY
+	DECLARE del_item AS STRING
+
+	item_list = CALL FUNCTION FiletoList(file_path)
+	
+	FOR index, data IN ENUMERATE item_list
+		IF data[0] EQUALS TO keyword
+			del_item = item_list[index]
+			CALL FUNCTION DeleteData(file_path, keyword, 0)
+			PRINT ("File from old file path has been moved to new file path!")
+			BREAK
+		ENDIF
+	ENDFOR
+	
+	CALL FUNCTION SaveData(del_item, newfile_path)
+
+ENDFUNCTION
+
+FUNCTION InputData(text, type, validator)
+
+	DECLARE verification AS BOOLEAN
+	DECLARE data AS STRING
+	
+	SET verification TO False
+	
+	DOWHILE verification EQUALS TO False
+		PRINT (text)
+		GET data
+		verification = CALL FUNCTION validator(data)
+	ENDWHILE
+
+	RETURN (data CONVERTED TO type AS data)
+	
+ENDFUNCTION
+
+FUNCTION GenerateID(reference_file, identification_letter)
+
+	DECLARE ID_num AS DECIMAL
+	DECLARE ID AS STRING
+
+	OPEN reference_file IN READ MODE AS rfile
+	SET ID_num TO LENGTH OF LINES READ IN rfile PLUS 1
+	
+	SET ID TO identification_letter CONCATENATE ID_num
+	
+	OPEN reference_file IN APPEND MODE AS afile
+	WRITE ID TO afile
+	
+	RETURN ID
+
+ENDFUNCTION
+
+FUNCTION DeleteID(file_path)
+
+	DECLARE ID_List AS ARRAY
+
+	ID_List = CALL FUNCTION FiletoList(file_path)
+	REMOVE THE LAST ELEMENT IN ID_List
+	
+	CALL FUNCTION OverwriteFile(file_path, ID_List)
+
+ENDFUNCTION
+
+FUNCTION PrintTenantDetails(data)
+
+	PRINT("1. ID                      : " CONCATENATE data[0])
+	PRINT("2. Name                    : " CONCATENATE data[1])
+	PRINT("3. Age                     : " CONCATENATE data[2])
+	PRINT("4. Date of Birth           : " CONCATENATE data[3])
+	PRINT("5. Date of Rental          : " CONCATENATE data[4])
+	PRINT("6. Place of Birth          : " CONCATENATE data[5])
+	PRINT("7. City of Birth           : " CONCATENATE data[6])
+	PRINT("8. Work History            : " CONCATENATE data[7])
+	PRINT("9. Current Employer's Name : " CONCATENATE data[8])
+
+ENDFUNCTION
+
+FUNCTION PrintApartmentDetails(data)
+
+	PRINT("1. ID                          : " CONCATENATE data[0])
+	PRINT("2. Current occupant's ID       : " CONCATENATE data[1])
+	PRINT("3. Date of Acquisition         : " CONCATENATE data[2])
+	PRINT("4. Square footage of apartment : " CONCATENATE data[3] AND " square ft")
+	PRINT("5. Expected Rent               : RM" CONCATENATE data[4])
+	PRINT("6. Rental History of occupant  : " CONCATENATE data[5] AND " past tenant/s)
+	PRINT("7. Deposit from occupant       : RM" CONCATENATE data[6])
+    
+ENDFUNCTION
+
+FUNCTION PrintTransactionDetails(data)
+
+	PRINT("1. Tenant ID               : " CONCATENATE data[0])
+	PRINT("2. Apartment ID            : " CONCATENATE data[1])
+	PRINT("3. Payment Month           : " CONCATENATE data[2])
+	PRINT("4. Rental Fees             : RM" CONCATENATE data[3])
+	PRINT("5. Payment status          : " CONCATENATE data[4])
+	
+ENDFUNCTION
+
+FUNCTION GenerateCredentials(userfile, user, usertype)
+
+	DECLARE login_crendetials AS ARRAY
+
+	username = CALL FUNCTION InputData("Please enter new username for user: ", str, VerifyName)
+	password = CALL FUNCTION InputData("Please enter new password for user: ", str, PasswordChecker)
+
+	SET login_crendentials TO [username, password, user, usertype]
+	
+	CALL FUNCTION SaveData(login_credential, userfile)
+	
+ENDFUNCTION
+
+FUNCTION AddTenantDetails(file_path, userfile)
+
+	DECLARE continue_input, option AS BOOLEAN
+	DECLARE Name, DateofBirth, DateofRental, PlaceOfBirth, CityOfBirth, Work_History, Current_Employer, ID AS STRING
+	DECLARE Age AS DECIMAL
+	DECLARE details AS ARRAY
+	
+	SET continue_input TO True
+	
+	DOWHILE continue_input EQUALS TO True
+	
+		Name = CALL FUNCTION InputData("Tenant's Name : ", str, VerifyName)
+		DateofBirth = CALL FUNCTION InputData("Date of Birth of Tenant (d/m/y) : ", str, VerifyMatureMinor)
+		DateofRental = CALL FUNCTION getDateoutsideRange("Date of Apartment Rental (d/m/y) : ", DateOfBirth, 18)
+		PlaceOfBirth = CALL FUNCTION InputData("Place of Birth of Tenant : ", str, VerifyName)
+		CityOfBirth = CALL FUNCTION InputData("City of Birth of Tenant : ", str, VerifyName)
+		Work_History = CALL FUNCTION InputData("Work History about Tenant : ", str, VerifyName)
+		Current_Employer = CALL FUNCTION InputData("Current employer's name of Tenant : ", str, VerifyName)
+		ID = CALL FUNCTION GenerateID("Tenant_ID.txt", "T")
+		Age = CALL FUNCTION countage(DateOfBirth) 
+		
+		SET details TO [ID, Name, Age, DateOfBirth, DateofRental, PlaceOfBirth, CityOfBirth, Work_History, Current_Employer]
+		
+		CALL FUNCTION PrintTenantDetails(details)
+		
+		option = CALL FUNCTION confirm_prompt("""
+			    Please make sure your details are correct!
+			    Do you wish to proceed with current data? [Y] for yes [N] for no: """)
+		
+		IF option EQUALS TO True THEN
+			CALL FUNCTION GenerateCredentials(userfile, Name, "t")
+			CALL FUNCTION SaveData(details, file_path)
+			PRINT ("Tenant record has been saved")
+		ELSE
+			CALL FUNCTION DeleteID("Tenant_ID.txt")
+		ENDIF
+		
+		continue_input = CALL FUNCTION confirm_prompt("Do you wish to continue input? [Y] for yes [N] for no: ")
+		
+	ENDWHILE
+
+ENDFUNCTION
+
+FUNCTION AddApartmentDetails(file_path, tenantfile)
+
+	DECLARE continue_input, option AS BOOLEAN
+	DECLARE details AS ARRAY
+	DECLARE Tenant_ID, Date_Acquisition, ID AS STRING
+	DECLARE Footage, Expected_Rent, Rental_History, Deposit AS DECIMAL
+	
+	SET continue_input TO True
+	
+	DOWHILE continue_input EQUALS TO True
+	
+		Tenant_ID = CALL FUNCTION GetID("Current occupant's ID : ", tenantfile, 0)
+		Date_Acquisition = CALL FUNCTION InputData("Date of Acquisition (d/m/y) : ", str, VerifyDate)
+		Footage = CALL FUNCTION InputData("Square footage of apartment : ", float, VerifyDigits)
+		Expected_Rent = CALL FUNCTION InputData("Expected Rent : ", float, VerifyDigits)
+		Rental_History = CALL FUNCTION InputData("Rental History of occupant : ", int, VerifyDigits)
+		Deposit = CALL FUNCTION InputData("Deposit from occupant : ", float, VerifyDigits)
+		ID = CALL FUNCTION GenerateID("Apartment_ID.txt", "AP")
+		
+		Footage CONVERTED INTO STRING AS Footage
+		Expected_Rent CONVERTED INTO STRING AS Expected_Rent
+		Rental_History CONVERTED INTO STRING AS Rental_History
+		Deposit CONVERTED INTO STRING AS Deposit
+		
+		SET details TO [ID, Tenant_ID, Date_Acquisition, Footage, Expected_Rent,Rental_History, Deposit]
+	
+		CALL FUNCTION PrintApartmentDetails(details)
+		
+		option = CALL FUNCTION confirm_prompt("""
+			    Please make sure your details are correct!
+			    Do you wish to proceed with current data? [Y] for yes [N] for no: """)
+		
+		IF option EQUALS TO True THEN
+			CALL FUNCTION SaveData(details, file_path)
+			PRINT ("Apartment record has been saved")
+		ELSE
+			CALL FUNCTION DeleteID("Apartment_ID.txt")
+		ENDIF
+
+		continue_input = CALL FUNCTION confirm_prompt("Do you wish to continue input? [Y] for yes [N] for no: ")
+		
+	ENDWHILE
+
+ENDFUNCTION
+
+FUNCTION AddTransactionDetails(file_path, tenantfile, apartmentfile)
+
+	DECLARE continue_input, option AS BOOLEAN
+	DECLARE Tenant_ID, Apartment_ID, Rental_Month, Payment_Status AS STRING
+	DECLARE Rental_Fees AS DECIMAL
+	DECLARE details AS ARRAY
+
+	SET continue_input TO True
+	
+	DOWHILE continue_input EQUALS TO True
+		Tenant_ID = CALL FUNCTION GetID("Enter tenant's ID : ", tenantfile, 0)
+		Apartment_ID = CALL FUNCTION GetID("Enter Apartment's ID : ", apartmentfile, 0)
+		Rental_Month = CALL FUNCTION InputData("Rental fees for which month (Exp:Apr): ", str, VerifyMonth)
+		Rental_Fees = CALL FUNCTION InputData("Enter expected rental fees: ", float, VerifyDigits)
+		Payment_Status = CALL FUNCTION InputData("State the payment status (Paid/Unpaid): ", str, VerifyPaymentStatus)
+		
+		CAPITALIZE FIRST LETTER OF Payment_Status
+		Rental_Fees CONVERTED INTO STRING AS Rental_Fees
+		
+		SET details TO [Tenant_ID, Apartment_ID, Rental_Month, Rental_Fees, Payment_Status]
+		CALL FUNCTION PrintTransactionDetails(details)
+		
+		option = CALL FUNCTION confirm_prompt(
+		    """Please make sure your details are correct!
+		    Do you wish to proceed with current data? [Y] for yes [N] for no\n: """)
+		   
+		IF option EQUALS TO True THEN
+			CALL FUNCTION SaveData(details, file_path)
+			PRINT ("Transaction Details has been saved")
+		ENDIF
+		
+		continue_input = CALL FUNCTION confirm_prompt("Do you wish to continue input? [Y] for yes [N] for no: ")
+	ENDWHILE
+
+ENDFUNCTION
+
+FUNCTION SearchTenantDetails(file_path)
+
+	DECLARE option AS DECIMAL
+	DECLARE keyword AS STRING
+	DECLARE details, tenant_list AS ARRAY
+
+	option = CALL FUNCTION InputData(
+		"""Please specify attribute
+		1. Tenant ID                6. Place of Birth
+		2. Name                     7. City of Birth
+		3. Age                      8. Work History
+		4. Date of Birth            9. Current Employer's Name
+		5. Date of Rental           10. All Current Data
+		SELECTION: """,int, VerifyDigits)
+		
+	IF option SMALLER THAN OR EQUAL TO 9 THEN
+	
+		PRINT ("Please input search keyword : ")
+		GET keyword
+		details = CALL FUNCTION SearchData(file_path, option - 1, keyword)
+		
+		IF LENGTH OF details LARGER THAN 0 THEN
+		
+			FOR EACH data IN details
+				CALL FUNCTION PrintTenantDetails(data)
+			ENDFOR
+		
+		ELSE
+			PRINT ("Failed to acquire Tenant Record")
+			
+		ENDIF
+		
+	ELSEIF option EQUALS TO 10
+	
+		tenant_list = CALL FUNCTION FiletoList(file_path)
+		
+		FOR EACH data IN tenant_list
+			CALL FUNCTION PrintTenantDetails(data)
+		ENDFOR
+		
+	ELSE
+		PRINT ("Invalid Search Operation!")
+	ENDIF
+	
+	CALL FUNCTION pause()
+
+ENDFUNCTION
+
+FUNCTION SearchApartmentDetails(file_path)
+
+	DECLARE option AS DECIMAL
+	DECLARE keyword AS STRING
+	DECLARE details, apartment_list AS ARRAY
+
+	option = CALL FUNCTION InputData(
+		"""Please specify search attribute
+		1. Apartment ID          5. Expected Rent
+		2. Occupant's ID         6. Rental History
+		3. Acquisition Date      7. Deposit
+		4. Square Footage        8. All current records
+		SELECTION: """, int, VerifyDigits)
+		
+	IF option SMALLER THAN OR EQUAL TO 7 THEN
+	
+		PRINT ("Please input search keyword : ")
+		GET keyword
+		details = CALL FUNCTION SearchData(file_path, option - 1, keyword)
+		
+		IF LENGTH OF details LARGER THAN 0 THEN
+		
+			FOR EACH data IN details
+				CALL FUNCTION PrintApartmentDetails(data)
+			ENDFOR
+			
+		ELSE
+			PRINT ("Failed to acquire Apartment record")
+			
+		ENDIF
+		
+	ELSEIF option EQUALS TO 8 THEN
+	
+		apartment_list = CALL FUNCTION FiletoList(file_path)
+		
+		FOR EACH data IN apartment_list
+			CALL FUNCTION PrintApartmentDetails(data)
+		ENDFOR
+		
+	ELSE
+		PRINT ("Invalid Search Operation!")
+	ENDIF
+	
+	CALL FUNCTION pause()
+
+ENDFUNCTION
+
+FUNCTION SearchEmptyApartment(file_path)
+
+	DECLARE empty_unit AS DECIMAL
+	DECLARE details AS ARRAY
+	
+	SET empty_unit TO 0
+	details = CALL FUNCTION SearchData(file_path, 1, "None")
+	
+	PRINT ("Empty units in the apartment:")
+	
+	IF LENGTH OF details LARGER THAN 0 THEN
+	
+		FOR EACH data IN details
+			empty_unit = empty_unit + 1
+			CALL FUNCTION PrintApartmentDetails(data)
+		ENDFOR
+		
+	ELSE
+		PRINT ("Unfortunately, there are no empty apartments right now")
+	ENDIF
+	
+	PRINT ("Empty units in the apartment:" CONCATENATE empty_unit CONVERTED TO STRING)
+	
+	CALL FUNCTION pause()
+
+ENDFUNCTION
+
+FUNCTION SearchTransactionDetails(file_path)
+
+	DECLARE keyword AS STRING
+	DECLARE option AS DECIMAL
+	DECLARE details, transaction_list AS ARRAY
+
+	option = CALL FUNCTION InputData("""Please specify attribute
+		       1. Tenant ID                4. Rental Fees
+		       2. Apartment ID             5. Payment Status
+		       3. Rental Month             6. All current records
+		       SELECTION: """, int, VerifyDigits)
+	
+	IF option SMALLER THAN OR EQUAL TO 5 THEN
+		PRINT ("Please input search keyword : ")
+		GET keyword
+		details = CALL FUNCTION SearchData(file_path, option - 1, keyword)
+		IF LENGTH OF details LARGER THAN 0 THEN
+			FOR EACH data IN details
+				CALL FUNCTION PrintTransactionDetails(data)
+			ENDFOR
+		ELSE
+			PRINT("Failed to acquire Transaction record")
+		ENDIF
+	ELSEIF option EQUALS TO 6 THEN
+		transaction_list = CALL FUNCTION FiletoList(file_path)
+		FOR EACH data IN transaction_list
+			CALL FUNCTION PrintTransactionDetails(data)
+		ENDFOR
+	ELSE
+		PRINT ("Invalid Search Operation!")
+	ENDIF
+	
+	CALL FUNCTION pause()
+
+ENDFUNCTION
+
+FUNCTION ViewUnpaidDebts(file_path, user_ID)
+
+	DECLARE unpaid, total_rental_debt AS DECIMAL
+	DECLARE unpaid_months, details AS ARRAY
+	
+	SET unpaid TO 0
+	SET total_rental_debt TO 0
+	
+	details = CALL FUNCTION SearchData(file_path, 0, user_ID)
+	FOR EACH data IN details
+		CALL FUNCTION PrintTransactionDetails(data)
+		
+		IF data[4] EQUALS TO "Unpaid" THEN
+			unpaid = unpaid + 1
+			unpaid_months APPEND data[2]
+			CONVERT data[3] TO FLOAT AS data[3]
+			total_rental_debt = total_rental_debt + data[3]
+		ENDIF
+	ENDFOR
+	
+	JOIN unpaid_months INTO STRING AS unpaid_months USING ', ' AS A SEPARATOR
+	PRINT ("Unpaid rent" CONCATENATE unpaid CONVERTED TO STRING)
+	PRINT ("Months where rent is overdue:" CONCATENATE unpaid_months CONVERTED TO STRING)
+	PRINT ("Total unpaid rental fees: RM" CONCATENATE total_rental_debt CONVERTED TO STRING)
+	CALL FUNCTION pause()
+
+ENDFUNCTION
+
+FUNCTION ViewLogFiles(directory)
+
+	DECLARE continue_viewing AS BOOLEAN
+	DECLARE file_list AS ARRAY
+	DECLARE selection AS DECIMAL
+	DECLARE file_path AS STRING
+	
+	SET continue_viewing TO True
+	file_list = CALL FUNCTION getFilesfromDirectory(directory, ".txt", ".log")
+	
+	IF LENGTH OF file_list LARGER THAN 0 THEN
+		DOWHILE continue_viewing EQUALS TO True
+			FOR index, file IN ENUMERATE file_list
+				REMOVE TRAILING ".txt" AND ".log" FROM file
+				PRINT (index + 1 CONVERTED TO STRING AND CONCATENATE file)
+			ENDFOR
+			
+			selection = CALL FUNCTION InputData("Please select log file to view (Enter number)", int, VerifyDigits)
+			
+			IF selection LARGER THAN 0 AND SMALLER THAN OR EQUAL TO LENGTH OF file_list THEN
+				file_path = directory CONCATENATE "\" AND file_list[selection-1]
+				OPEN file_path IN READ MODE AS rfile
+				PRINT CONTENTS OF rfile AFTER READ
+				
+				continue_viewing = CALL FUNCTION confirm_prompt("Do you want to continue viewing? [Yes] to return [No] to abort:")
+			ELSE
+				PRINT ("Invalid selection, please try again")
+			ENDIF
+		ENDWHILE
+	ELSE
+		PRINT ("No log files were found within the directory")
+	ENDIF
+
+ENDFUNCTION
+
+FUNCTION ModifyTenantRecord(file_path):
+
+	DECLARE key AS STRING
+	DECLARE option AS DECIMAL
+	DECLARE Alist, date_of_rental, date_of_birth AS ARRAY
+	DECLARE flag AS BOOLEAN
+
+	SET flag TO False
+	Alist = CALL FUNCTION FiletoList(file_path)
+
+	PRINT ("Please enter Tenant ID for modications : ")
+	GET key
+
+	FOR EACH data IN Alist
+		IF data[0] EQUALS TO key THEN
+			CALL FUNCTION PrintTenantDetails(data)
+			flag = True
+			BREAK
+		ENDIF
+	ENDFOR
+
+	IF flag EQUAL TO True THEN
+    
+		DOWHILE True
+			option = CALL FUNCTION InputData("Which data you would like to modify? (Select number)= ", int, VerifyDigits)
+			IF option EQUAL TO 1 THEN
+				PRINT("Tenant ID cannot be modified")
+
+			ELSEIF option EQUAL TO 2 THEN
+				newdata = CALL FUNCTION InputData("Enter new Name: ", str, VerifyName)
+				BREAK
+
+			ELSEIF option EQUAL TO 3 THEN
+				PRINT("Age cannot be modified, please modify Date of Birth to change the Age")
+
+			ELSEIF option EQUAL TO 4 THEN
+				FOR EACH record IN CALL FUNCTION SearchData(file_path, 0, key)
+					FOR EACH data IN record
+						data_of_rental APPEND data
+					ENDFOR
+				ENDFOR
+				data_of_rental = data_of_rental[4]
+				newdata = CALL FUNCTION getDateoutsideRange("Enter new Date of Birth: ", date_of_rental, -18)
+				BREAK
+
+			ELSEIF option EQUAL TO 5 THEN
+				FOR EACH record IN CALL FUNCTION SearchData(file_path, 0, key)
+					FOR EACH data IN record
+						date_of_birth APPEND data
+					ENDFOR
+				ENDFOR
+				date_of_birth = data_of_birth[3]
+				newdata = CALL FUNCTION getDateoutsideRange("Enter new Date of Apartment Rental: ", date_of_birth, 18)
+				BREAK
+
+			ELSEIF option EQUAL TO 6 THEN
+				newdata = CALL FUNCTION InputData("Enter new Place of Birth: ", str, VerifyName)
+				BREAK
+
+			ELSEIF option EQUAL TO 7 THEN
+				newdata = CALL FUNCTION InputData("Enter new City of Birth: ", str, VerifyName)
+				BREAK
+
+			ELSEIF option EQUAL TO 8 THEN
+				newdata = CALL FUNCTION InputData("Enter new Work History: ", str, VerifyName)
+				BREAK
+
+			ELSEIF option EQUAL TO 9 THEN
+				newdata = CALL FUNCTION InputData("Enter new Employer's Name: ", str, VerifyName)
+				BREAK
+
+			ELSE
+				PRINT("Invalid option! Please try again")
+			ENDIF
+			newdata CONVERTED INTO STRING AS newdata
+			CALL FUNCTION ModifyRecord(file_path, option - 1, key, newdata)
+		ENDWHILE
+
+	ELSE
+		PRINT("Invalid search results, Tenant modify program aborted!")
+	ENDIF
+
+ENDFUNCTION
+
+FUNCTION ModifyApartmentRecord(file_path, tenantfile)
+
+	DECLARE key AS STRING
+	DECLARE option AS DECIMAL
+	DECLARE Alist AS ARRAY
+	DECLARE flag AS BOOLEAN
+
+	SET flag TO False
+	Alist = CALL FUNCTION FiletoList(file_path)
+
+	PRINT ("Please enter Apartment ID for modications : ")
+	GET key
+    
+	FOR EACH data IN Alist
+		IF data[0] EQUAL TO key THEN
+			CALL FUNCTION PrintApartmentDetails(data)
+			flag = True
+			BREAK
+		ENDIF
+	ENDFOR
+
+	IF flag EQUAL TO True THEN
+		DOWHILE True
+			option = CALL FUNCTION InputData("Which data you would like to modify? (Select number)= ", int, VerifyDigits)
+
+			IF option EQUAL TO 1 THEN
+				PRINT("Apartment ID cannot be modified")
+
+			ELSEIF option EQUAL TO 2 THEN
+				newdata = CALL FUNCTION GetID("Enter new occupant's ID : ", tenantfile, 0)
+				BREAK
+
+			ELSEIF option EQUAL TO 3 THEN
+				newdata = CALL FUNCTION InputData("Enter new Date of Acquisition: ", str, VerifyDate)
+				BREAK
+
+			ELSEIF option EQUAL TO 4 THEN
+				newdata = CALL FUNCTION InputData("Enter new Square Footage: ", float, VerifyDigits)
+				BREAK
+
+			ELSEIF option EQUAL TO 5 THEN
+				newdata = CALL FUNCTION InputData("Enter new Expected Rent: ", float, VerifyDigits)
+				BREAK
+
+			ELSEIF option EQUAL TO 6 THEN
+				newdata = CALL FUNCTION InputData("Enter new Rental History: ", int, VerifyDigits)
+				BREAK
+
+			ELSEIF option EQUAL TO 7 THEN
+				newdata = CALL FUNCTION InputData("Enter new Deposit: ", float, VerifyDigits)
+				BREAK
+
+			ELSE
+				PRINT("Invalid option! Please try again")
+			ENDIF
+			newdata CONVERTED INTO STRING AS newdata
+			CALL FUNCTION ModifyRecord(file_path, option - 1, key, newdata)
+		ENDWHILE
+	ELSE
+		PRINT("Invalid search results, Apartment modify program aborted!")
+	ENDIF
+
+ENDFUNCTION
+
+FUNCTION ModifyTransactionRecord(file_path)
+
+	DECLARE Tlist AS ARRAY
+	DECLARE key1, key2, key3, Payment_Status AS STRING
+	DECLARE flag AS BOOLEAN
+
+	SET flag TO False
+	Tlist = CALL FUNCTION FiletoList(file_path)
+
+	PRINT ("Please enter the Tenant ID : ")
+	GET key1
+	PRINT ("Please enter the Apartment ID : ")
+	GET key2
+    
+	key3 = CALL FUNCTION InputData("Please enter rental month : ", str, VerifyMonth)
+
+	FOR EACH data IN Tlist
+		IF data[0] EQUAL TO key1 AND data[1] EQUAL TO key2 AND data[2] EQUAL TO key3 THEN
+			CALL FUNCTION PrintTransactionDetails(data)
+			flag = True
+			BREAK
+		ENDIF
+	ENDFOR
+
+	IF flag EQUAL TO True THEN
+		Payment_Status = CALL FUNCTION InputData("State the payment status (Paid/Unpaid): ", str, VerifyPaymentStatus)
+		CAPITALIZE FIRST LETTER OF Payment_Status
+		FOR index, data IN ENUMERATE Tlist
+			IF data[0] EQUAL TO key1 AND data[1] EQUAL TO key2 AND data[2] EQUAL TO key3 THEN
+				data[4] = Payment_Status
+				Tlist[index] = data
+				BREAK
+		CALL FUNCTION OverwriteFile(file_path, Tlist)
+
+	ELSE
+		PRINT("Invalid search results, Transaction modify program aborted!")
+	ENDIF
+
+ENDFUNCTION
+
+FUNCTION DeleteAdmin(file_path)
+
+	DECLARE adminexists AS BOOLEAN
+	DECLARE adminname AS STRING
+	
+	PRINT ("Please enter Admin's name for deletion: ")
+	GET adminname
+	
+	adminexists = CALL FUNCTION CheckDuplicateinFile (file_path, adminname)
+	
+	IF adminexists EQUAL TO True THEN
+		CALL FUNCTION DeleteData (file_path, adminname, 2)
+	ELSE
+		PRINT ("Admin does not exist!")	
+	ENDIF
+
+ENDFUNCTION
+
+FUNCTION UpdateApartmentDetails(file_path, keyword)
+
+	DECLARE item_list AS ARRAY
+
+	item_list = CALL FUNCTION FiletoList(file_path)
+
+	FOR EACH data IN item_list
+		IF data[1] EQUAL TO keyword THEN
+			data[1] = "None"
+			CONVERT data[5] INTO DECIMAL AS data[5]
+			data[5] = (data[5] + 1) CONVERTED INTO STRING
+			BREAK
+		ENDIF
+	ENDFOR
+	CALL FUNCTION OverwriteFile(file_path, item_list)
+
+ENDFUNCTION
+
+FUNCTION DeleteTenantData(file_path, userfile, apartmentfile, pasttenantfile)
+
+	DECLARE keyword, tenantname AS STRING
+	DECLARE details AS ARRAY
+	DECLARE option AS DECIMAL
+
+	PRINT ("Please enter Tenant ID to data deletion: ")
+	GET keyword
+
+	details = CALL FUNCTION SearchData(file_path, 0, keyword)
+
+	IF LENGTH OF details LARGER THAN 0 THEN
+		FOR EACH data IN details
+			CALL FUNCTION PrintTenantDetails(data)
+		ENDFOR
+
+		DOWHILE True
+			option = CALL FUNCTION InputData("""Please validate the data above!
+					Press:
+					 [1] to confirm deletion and move record to past tenant's file.
+					 [2] to confirm deletion without updating other files.
+					 [3] to abort deletion and exit.
+					SELECT OPTION: """, int, VerifyDigits)
+					
+			FOR EACH record IN CALL FUNCTION SearchData(file_path, 0, keyword)
+				FOR EACH data IN record
+					tenantname APPEND data
+				ENDFOR
+			ENDFOR
+			tenantname = tenantname[1]
+				
+			IF option EQUAL TO 1 THEN
+				CALL FUNCTION UpdateApartmentDetails(apartmentfile, keyword)
+				CALL FUNCTION MoveRecordtoFile(file_path, keyword, pasttenantfile)
+				CALL FUNCTION DeleteData(userfile, tenantname, 2)
+				BREAK
+
+			ELSEIF option EQUAL TO 2 THEN
+				CALL FUNCTION UpdateApartmentDetails(apartmentfile, keyword)
+				CALL FUNCTION DeleteData(file_path, keyword, 0)
+				CALL FUNCTION DeleteData(userfile, tenantname, 2)
+				BREAK
+
+			ELSEIF option EQUAL TO 3 THEN
+				BREAK
+				
+			ELSE
+				PRINT("Invalid option! Please try again")
+			ENDIF
+		ENDWHILE
+
+	ELSE
+		PRINT("Failed to acquire Tenant record!")
+	ENDIF
+
+ENDFUNCTION
+
+FUNCTION DeleteApartmentData(file_path)
+
+	DECLARE keyword AS STRING
+	DECLARE details AS ARRAY
+	DECLARE option AS DECIMAL
+
+	PRINT ("Please enter Apartment ID for data deletion: ")
+	GET keyword
+
+	details = CALL FUNCTION SearchData(file_path, 0, keyword)
+
+	IF LENGTH OF details LARGER THAN 0 THEN
+		FOR EACH data IN details
+			CALL FUNCTION PrintApartmentDetails(data)
+		ENDFOR
+
+		DOWHILE True
+			option = CALL FUNCTION InputData("""Please confirm with the data above!
+				       Press:
+				        [1] to confirm deletion of selected data.
+				        [2] to keep the selected data and exit.
+				       SELECT OPTION: """, int, VerifyDigits)
+
+			IF option EQUAL TO 1 THEN
+				CALL FUNCTION DeleteData(file_path, keyword, 0)
+				BREAK
+
+			ELSEIF option EQUAL TO 2 THEN
+				BREAK
+
+			ELSE
+				PRINT("Invalid option! Please try again!")
+			ENDIF
+		ENDWHILE
+
+	ELSE
+		PRINT("Failed to acquire Apartment record")
+	ENDIF
+
+ENDFUNCTION
+
+FUNCTION DeleteTransactionData(file_path)
+
+	DECLARE keyword, keyword2, keyword3 AS STRING
+	DECLARE transactionfile, details, Tenant, Apartment, Month AS ARRAY
+	DECLARE option AS DECIMAL
+
+	PRINT ("Please enter Tenant ID for data deletion: ")
+	GET keyword1
+	
+	PRINT ("Please enter Apartment ID linked to Tenant ID: ")
+	GET keyword2
+	
+	keyword3 = CALL FUNCTION InputData("Please enter the specific month's transaction record for deletion: ", str, VerifyMonth)
+	transactionfile = CALL FUNCTION FiletoList(file_path)
+
+	FOR EACH record IN CALL FUNCTION SearchData(file_path, 0, keyword)
+		FOR data IN record
+			Tenant APPEND data
+		ENDFOR
+	ENDFOR
+	Tenant = Tenant[0]
+
+	FOR EACH record IN CALL FUNCTION SearchData(file_path, 1, keyword2)
+		FOR data IN record
+			Apartment APPEND data
+		ENDFOR
+	ENDFOR
+	Apartment = Apartment[1]
+
+	FOR EACH record IN CALL FUNCTION SearchData(file_path, 2, keyword3)
+		FOR data IN record
+			Month APPEND data
+		ENDFOR
+	ENDFOR
+	Month = Month[2]
+
+	FOR EACH record IN transactionfile
+		IF Tenant IN record AND Apartment IN record AND Month IN record THEN
+			details APPEND record
+		ENDIF
+	ENDFOR
+
+	IF LENGTH OF details LARGER THAN 0 THEN
+		FOR EACH data IN details
+			CALL FUNCTION PrintTransactionDetails(data)
+		ENDFOR
+
+		DOWHILE True
+			option = CALL FUNCTION InputData("""Please confirm with the data above!
+				       Press:
+				        [1] to confirm deletion of selected data.
+				        [2] to keep the selected data and exit.
+				       SELECT OPTION: """, int, VerifyDigits)
+
+			IF option EQUAL TO 1 THEN
+			
+				FOR EACH data in details
+					transactionfile REMOVE data
+				ENDFOR
+				
+				CALL FUNCTION OverwriteFile(file_path, transactionfile)
+				BREAK
+
+			ELSEIF option EQUAL TO 2 THEN
+				BREAK
+
+			ELSE
+				PRINT("Invalid option! Please try again!")
+			ENDIF
+		ENDWHILE
+
+	ELSE
+		PRINT("Failed to acquire Transaction record")
+	ENDIF
+
+ENDFUNCTION
+
+FUNCTION DeletePastTenantData(file_path)
+
+	DECLARE keyword AS STRING
+	DECLARE details AS ARRAY
+	DECLARE option AS DECIMAL
+
+	PRINT ("Please enter tenant ID for past tenant to data deletion: ")
+	GET keyword
+	
+	details = CALL FUNCTION SearchData(file_path, 0, keyword)
+
+	IF LENGTH OF details LARGER THAN 0  THEN
+		FOR EACH data IN details
+			CALL FUNCTION PrintTenantDetails(data)
+		ENDFOR
+
+		DOWHILE True
+			option = CALL FUNCTION InputData("""Please confirm with the data above!
+					       Press:
+					        [1] to confirm deletion of selected data.
+					        [2] to keep the selected data and exit.
+					       SELECT OPTION: """, int, VerifyDigits)
+			IF option EQUAL TO 1 THEN
+				CALL FUNCTION DeleteData(file_path, keyword, 0)
+				BREAK
+
+			ELSEIF option EQUAL TO 2 THEN
+				BREAK
+
+			ELSE
+				PRINT("Invalid option! Please try again")
+			ENDIF
+		ENDWHILE
+
+	ELSE
+		PRINT("Failed to acquire Tenant record!")
+	ENDIF
+
+ENDFUNCTION
+
+FUNCTION VerifyLoginCredentials(new_name, new_password, file_path, attempts_allowed)
+
+	DECLARE retry AS DECIMAL
+	DECLARE confirm_name, confirm_password AS STRING
+	DECLARE usernameexist, passwordexist AS BOOLEAN
+
+	SET retry AS 0
+	
+	DOWHILE True
+
+		usernameexist = CALL FUNCTION CheckDuplicateinFile(file_path, confirm_name)
+		passwordexist = CALL FUNCTION CheckDuplicateinFile(file_path, confirm_password)
+
+		IF usernameexist EQUAL TO False AND passwordexist EQUAL TO False THEN
+			PRINT ("Please confirm your username")
+			GET confirm_name
+
+			PRINT ("Please confirm your password")
+			GET confirm_password
+			
+			IF confirm_name EQUAL TO new_name AND confirm_password EQUAL TO new_password THEN
+				RETURN True
+
+			ELSE
+				retry = retry + 1
+				IF retry LESS THAN attempts_allowed THEN
+					PRINT("Wrong username or password!" CONCATENATE (attempts_allowed - retry) AND "retries remaining.")
+
+				ELSE
+					PRINT("Exceeded maximum number of tries!")
+					RETURN False
+				ENDIF
+			ENDIF
+
+		ELSE
+			PRINT("Username and password already exists, please try a different username or password")
+			RETURN False
+		ENDIF
+    ENDWHILE
+
+ENDFUNCTION
+
+FUNCTION ModifyLoginCredentials(file_path)
+
+	DECLARE continue_operation, userconfirmation, flag AS BOOLEAN
+	DECLARE username, password AS STRING
+	DECLARE credentials AS ARRAY
+
+	SET continue_operation TO True
+
+	DOWHILE continue_operation EQUAL TO True
+	
+		PRINT ("Please enter old username: ")
+		GET username
+		
+		PRINT ("Please enter old password: ")
+		GET password
+		
+		userconfirmation = CALL FUNCTION ValidateUser(username, password, file_path)
+
+		IF userconfirmation EQUAL TO True
+			new_username = CALL FUNCTION InputData("Please enter new username: ", str, VerifyName)
+			new_password = CALL FUNCTION InputData("Please enter new password: ", str, PasswordChecker)
+			flag = CALL FUNCTION VerifyLoginCredentials(new_username, new_password, file_path, 3)
+
+			IF flag EQUAL TO True
+				credentials = CALL FUNCTION FiletoList(file_path)
+				
+				FOR index, data IN ENUMERATE credentials
+					IF username EQUAL TO data[0] AND password EQUAL TO data[1]
+						data[0], data[1] = new_username, new_password
+						credentials[index] = data
+					ENDIF
+				ENDFOR
+				
+				CALL FUNCTION OverwriteFile(file_path, credentials)
+				BREAK
+			ENDIF
+		ELSE
+			PRINT("Validation of User Failed!")
+			continue_operation = CALL FUNCTION confirm_prompt("Do you wish to continue? [Y] for yes [N] for no")
+		ENDIF
+	ELSE
+		PRINT("Modifications of Login Credentials aborted due to failed user validation")
+	ENDWHILE
+
+ENDFUNCTION
+
+FUNCTION Main_Menu_SA(logfile)
+
+	DECLARE mainmenutitle, mainmenusystem, insertdatasystem, viewdatasystem, deletedatasystem, log_directory,
+		apartmentfile, tenantfile, transactionfile, pasttenantfile, userfile, continue_msg, logout_msg,
+		invalid_msg, adminname AS STRING
+	DECLARE exit_program, continue_operation AS BOOLEAN
+	DECLARE selection, option AS DECIMAL
+
+	SET mainmenutitle TO """::::    ::::      :::     ::::::::::: ::::    :::  ::::    ::::  :::::::::: ::::    ::: :::    :::
+	+:+:+: :+:+:+   :+: :+:       :+:     :+:+:   :+:  +:+:+: :+:+:+ :+:        :+:+:   :+: :+:    :+:
+	+:+ +:+:+ +:+  +:+   +:+      +:+     :+:+:+  +:+  +:+ +:+:+ +:+ +:+        :+:+:+  +:+ +:+    +:+
+	+#+  +:+  +#+ +#++:++#++:     +#+     +#+ +:+ +#+  +#+  +:+  +#+ +#++:++#   +#+ +:+ +#+ +#+    +:+
+	+#+       +#+ +#+     +#+     +#+     +#+  +#+#+#  +#+       +#+ +#+        +#+  +#+#+# +#+    +#+
+	#+#       #+# #+#     #+#     #+#     #+#   #+#+#  #+#       #+# #+#        #+#   #+#+# #+#    #+#
+	###       ### ###     ### ########### ###    ####  ###       ### ########## ###    ####  ########  """
+
+	SET mainmenusystem TO """° 　. ● . ★ ° . *　　　°　.　°☆ 　. * ● ¸ . ★ °　★ 　° :●. 　 * ★　 .　 *
+	★ ° . *　°　★ 　. David, Welcome to Main Menu!• ○ ★ ° :● . ★ ° .  *　°
+	.　°☆ 　. * ● ¸ . 　　　★ 　° :.★ ° . *　　　°　.　°☆ 　. * ● ¸ 　°☆ 　.
+		1. Insert Data          5. Delete Data
+		2. Modify Data          6. Change Login Credentials
+		3. View Log History     7. Exit
+		4. View Data
+		SELECT OPTION: """
+
+	SET insertdatasystem TO """° 　. ● . ★ ° . *　　　°　.　°☆ 　. * ● ¸ . ★ °　★ 　° :● ★　 *  .　
+	★ ° . *　 ° .　• .　Insert Data System!:. 　 *  • ○ ° ★* • ○  ★
+	.　°☆ 　. * ● :.★ ° . *　　　°　.　°☆ 　. *.　°☆ 　. * ● *　　　°　.
+		1. New Tenant Data          4. New Admin Data
+		2. New Apartment Data       5. Exit
+		3. New Transaction Data
+		SELECT OPTION: """
+
+	SET modifydatasystem TO """° 　. ● . ★ ° . *　　　°　.　°☆ 　. * ● ¸ . ★ °　★ 　° :● ★　 *  .　
+	★ ° . *　 ° .　• .　Modify Data System!:. 　 *  • ○ ° ★* • ○  ★
+	.　°☆ 　. * ● :.★ ° . *　　　°　.　°☆ 　. *.　°☆ 　. * ● *　　　°　.
+		1. Modify Tenant Data       3. Modify Transaction Data
+		2. Modify Apartment Data    4. Exit
+		SELECT OPTION: """
+
+	SET viewdatasystem TO """° 　. ● . ★ ° . *　　　°　.　°☆ 　. * ● ¸ . ★ °　★ 　° :● ★　 *  .　
+	★ ° . *　 ° .　• .　View Data System!:. 　 *  •  ○ °  ★* • ○  ★
+	.　°☆ 　. * ● :.★ ° . *　　　°　.　°☆ 　. *.　°☆ 　. * ● *　　　°　.
+		1. View Tenant Data         4. View Past Tenant Data
+		2. View Apartment Data      5. Exit
+		3. View Transaction Data
+		SELECT OPTION: """
+
+	SET deletedatasystem TO """° 　. ● . ★ ° . *　　　°　.　°☆ 　. * ● ¸ . ★ °　★ 　° :● ★　 *  .　
+	★ ° . *　 ° .　• .　Delete Data System!:. 　 *  • ○ ° ★* • ○  ★
+	.　°☆ 　. * ● :.★ ° . *　　　°　.　°☆ 　. *.　°☆ 　. * ● *　　　°　.
+		1. Delete Tenant Data       4. Delete Past Tenant Data
+		2. Delete Apartment Data    5. Delete Admin Record
+		3. Delete Transaction Data  6. Exit
+		SELECT OPTION: """
+
+	SET log_directory TO "Logs"
+	SET apartmentfile TO "Apartment Details.txt"
+	SET tenantfile TO "Tenant Details.txt"
+	SET transactionfile TO "Transaction Details.txt"
+	SET pasttenantfile TO "Past Tenant Details.txt"
+	SET userfile TO "userfile.txt"
+	SET continue_msg TO "Do you wish to continue operation? [Y] for Yes [N] for No:"
+	SET logout_msg TO "Are you sure you want to logout? [Y] for Yes [N] for No:"
+	SET invalid_msg TO "Invalid option! Please try again"
+	SET exit_program TO False
+    
+	DOWHILE exit_program EQUAL TO False
+		IF NO ERRORS CAPTURED THEN
+			PRINT(mainmenutitle)
+			SET continue_operation TO True
+			selection = CALL FUNCTION InputData(mainmenusystem, int, VerifyDigits)
+			IF selection EQUAL TO 1 THEN
+				DOWHILE continue_operation EQUAL TO True
+					option = CALL FUNCTION InputData(insertdatasystem, int, VerifyDigits)
+					IF option EQUAL TO 1 THEN
+						CALL FUNCTION AddTenantDetails(tenantfile, userfile)
+						CALL FUNCTION log(logfile, "info", ("New records added to " CONCATENATE tenantfile))
+
+					ELSEIF option EQUAL TO 2 THEN
+						CALL FUNCTION AddApartmentDetails(apartmentfile, tenantfile)
+						CALL FUNCTION log(logfile, "info", ("New records added to " CONCATENATE apartmentfile))
+
+					ELSEIF option EQUAL TO 3 THEN
+						CALL FUNCTION AddTransactionDetails(transactionfile, tenantfile, apartmentfile)
+						CALL FUNCTION log(logfile, "info", ("New records added to " CONCATENATE transactionfile))
+
+					ELSEIF option EQUAL TO 4 THEN
+						adminname = CALL FUNCTION InputData("Please enter Admin's Name: ", str, VerifyName)
+						CALL FUNCTION GenerateCredentials(userfile, adminname, "a")
+						CALL FUNCTION log(logfile, "info", ("Added new Admin " CONCATENATE adminname AND "'s Login Credentials to " AND userfile))
+
+					ELSEIF option EQUAL TO 5 THEN
+						BREAK
+
+					ELSE
+						PRINT(invalid_msg)
+					ENDIF
+					continue_operation = CALL FUNCTION confirm_prompt(continue_msg)
+				ENDWHILE
+
+			ELSEIF selection EQUAL TO 2 THEN
+				DOWHILE continue_operation EQUAL TO True
+					option = CALL FUNCTION InputData(modifydatasystem, int, VerifyDigits)
+					IF option EQUAL TO 1 THEN
+						CALL FUNCTION ModifyTenantRecord(tenantfile)
+						CALL FUNCTION log(logfile, "info", ("Records modified in " CONCATENATE tenantfile))
+
+					ELSEIF option EQUAL TO 2 THEN
+						CALL FUNCTION ModifyApartmentRecord(apartmentfile, tenantfile)
+						CALL FUNCTION log(logfile, "info", ("Records modified in " CONCATENATE apartmentfile))
+
+					ELSEIF option EQUAL TO 3 THEN
+						CALL FUNCTION ModifyTransactionRecord(transactionfile)
+						CALL FUNCTION log(logfile, "info", ("Records modified in " CONCATENATE transactionfile))
+
+					ELSEIF option EQUAL TO 4 THEN
+						BREAK
+
+					ELSE
+						PRINT(invalid_msg)
+					ENDIF
+
+					continue_operation = CALL FUNCTION confirm_prompt(continue_msg)
+				ENDWHILE
+
+			ELSEIF selection EQUAL TO 3 THEN
+				CALL FUNCTION ViewLogFiles(log_directory)
+				CALL FUNCTION log(logfile, "info", ("Returned log files from " CONCATENATE log_directory AND " for viewing"))
+
+			ELSEIF selection EQUAL TO 4 THEN
+				DOWHILE continue_operation EQUAL TO True
+					option = CALL FUNCTION InputData(viewdatasystem, int, VerifyDigits)
+					IF option EQUAL TO 1 THEN
+						CALL FUNCTION SearchTenantDetails(tenantfile)
+						CALL FUNCTION log(logfile, "info", ("Returned records from " CONCATENATE tenantfile AND " for viewing"))
+
+					ELSEIF option EQUAL TO 2 THEN
+						CALL FUNCTION SearchApartmentDetails(apartmentfile)
+						CALL FUNCTION log(logfile, "info", ("Returned records from " CONCATENATE apartmentfile AND " for viewing"))
+
+					ELSEIF option EQUAL TO 3 THEN
+						CALL FUNCTION SearchTransactionDetails(transactionfile)
+						CALL FUNCTION log(logfile, "info", ("Returned records from " CONCATENATE transactionfile AND " for viewing"))
+
+					ELSEIF option EQUAL TO 4 THEN
+						CALL FUNCTION SearchTenantDetails(pasttenantfile)
+						CALL FUNCTION log(logfile, "info", ("Returned records from " CONCATENATE pasttenantfile AND " for viewing"))
+
+					ELSEIF option EQUAL TO 5 THEN
+						BREAK
+
+					ELSE
+						PRINT(invalid_msg)
+					ENDIF
+
+					continue_operation = CALL FUNCTION confirm_prompt(continue_msg)
+				ENDWHILE
+
+			ELSEIF selection EQUAL TO 5 THEN
+				DOWHILE continue_operation EQUAL TO True
+					option = CALL FUNCTION InputData(deletedatasystem, int, VerifyDigits)
+					IF option EQUAL TO 1 THEN
+						CALL FUNCTION DeleteTenantData(file_path, userfile, apartmentfile, pasttenantfile)
+						CALL FUNCTION log(logfile, "info", ("Deleted records in " CONCATENATE tenantfile))
+
+					ELSEIF option EQUAL TO 2 THEN
+						CALL FUNCTION DeleteApartmentData(apartmentfile)
+						CALL FUNCTION log(logfile, "info", ("Deleted records in " CONCATENATE apartmentfile))
+
+					ELSEIF option EQUAL TO 3 THEN
+						CALL FUNCTION DeleteTransactionData(transactionfile)
+						CALL FUNCTION log(logfile, "info", ("Deleted records in " CONCATENATE transactionfile))
+
+					ELSEIF option EQUAL TO 4 THEN
+						CALL FUNCTION DeletePastTenantData(pasttenantfile)
+						CALL FUNCTION log(logfile, "info", ("Deleted records in " CONCATENATE pasttenantfile))
+
+					ELSEIF option EQUAL TO 5 THEN
+						CALL FUNCTION DeleteAdmin(userfile)
+						CALL FUNCTION log(logfile, "info", ("Deleted admin in " CONCATENATE userfile))
+
+					ELSEIF option EQUAL TO 6 THEN
+						BREAK
+
+					ELSE
+						PRINT(invalid_msg)
+
+					continue_operation = CALL FUNCTION confirm_prompt(continue_msg)
+				ENDWHILE
+
+			ELSEIF selection EQUAL TO 6 THEN
+				CALL FUNCTION ModifyLoginCredentials(userfile)
+				CALL FUNCTION log(logfile, "info", ("Super Admin David successfully modified personal login credentials in" CONCATENATE userfile))
+
+			ELSEIF selection EQUAL TO 7 THEN
+				exit_program = CALL FUNCTION confirm_prompt(logout_msg)
+
+			ELSE
+				PRINT("Invalid option! Please try again")
+				CALL FUNCTION log(logfile, "error", "Invalid Menu Option")
+			ENDIF
+		
+		ELSE
+			CONVERT ERROR CAPTURED TO STRING AS e
+			log(logfile, "warn", e)
+			PRINT (e CONCATENATE "Returning to Main Menu")
+		ENDIF
+	ENDWHILE
+
+ENDFUNCTION
+
+FUNCTION Main_Menu_A(username, logfile)
+
+	DECLARE mainmenutitle, mainmenusystem, insertdatasystem, modifydatasystem, viewdatasystem, deletedatasystem,
+		userfile, apartmentfile, tenantfile, transactionfile, pasttenantfile, continue_msg, invalid_msg,
+		logout_msg AS STRING
+	DECLARE exit_program, continue_operation AS BOOLEAN
+	DECLARE selection, option AS DECIMAL
+
+	SET mainmenutitle TO """::::    ::::      :::     ::::::::::: ::::    :::  ::::    ::::  :::::::::: ::::    ::: :::    :::
+	+:+:+: :+:+:+   :+: :+:       :+:     :+:+:   :+:  +:+:+: :+:+:+ :+:        :+:+:   :+: :+:    :+:
+	+:+ +:+:+ +:+  +:+   +:+      +:+     :+:+:+  +:+  +:+ +:+:+ +:+ +:+        :+:+:+  +:+ +:+    +:+
+	+#+  +:+  +#+ +#++:++#++:     +#+     +#+ +:+ +#+  +#+  +:+  +#+ +#++:++#   +#+ +:+ +#+ +#+    +:+
+	+#+       +#+ +#+     +#+     +#+     +#+  +#+#+#  +#+       +#+ +#+        +#+  +#+#+# +#+    +#+
+	#+#       #+# #+#     #+#     #+#     #+#   #+#+#  #+#       #+# #+#        #+#   #+#+# #+#    #+#
+	###       ### ###     ### ########### ###    ####  ###       ### ########## ###    ####  ########  """
+
+	SET mainmenusystem TO """° 　. ● . ★ ° . *　　　°　.　°☆ 　. * ● ¸ . ★ °　★ 　° :●. 　 * ★　 .　 *
+	★ ° . *　°　★ 　. Admin " CONCATENATE username AND ", Welcome to Main Menu!• ○ ★ ° :● . ★ ° .  *　°
+	.　°☆ 　. * ● ¸ . 　　　★ 　° :.★ ° . *　　　°　.　°☆ 　. * ● ¸ 　°☆ 　.
+		1. Insert Data          4. Delete Data
+		2. Modify Data          5. Change Login Credentials
+		3. View Data            6. Exit
+		SELECT OPTION: """
+
+	SET insertdatasystem TO """° 　. ● . ★ ° . *　　　°　.　°☆ 　. * ● ¸ . ★ °　★ 　° :● ★　 *  .　
+	★ ° . *　 ° .　• .　Insert Data System!:. 　 *  • ○ ° ★* • ○  ★
+	.　°☆ 　. * ● :.★ ° . *　　　°　.　°☆ 　. *.　°☆ 　. * ● *　　　°　.
+		1. New Tenant Data          3. New Transaction Data
+		2. New Apartment Data       4. Exit
+		SELECT OPTION: """
+
+	SET modifydatasystem TO """° 　. ● . ★ ° . *　　　°　.　°☆ 　. * ● ¸ . ★ °　★ 　° :● ★　 *  .　
+	★ ° . *　 ° .　• .　Modify Data System!:. 　 *  • ○ ° ★* • ○  ★
+	.　°☆ 　. * ● :.★ ° . *　　　°　.　°☆ 　. *.　°☆ 　. * ● *　　　°　.
+		1. Modify Tenant Data       3. Modify Transaction Data
+		2. Modify Apartment Data    4. Exit
+		SELECT OPTION: """
+
+	SET viewdatasystem TO """° 　. ● . ★ ° . *　　　°　.　°☆ 　. * ● ¸ . ★ °　★ 　° :● ★　 *  .　
+	★ ° . *　 ° .　• .　View Data System!:. 　 *  •  ○ °  ★* • ○  ★
+	.　°☆ 　. * ● :.★ ° . *　　　°　.　°☆ 　. *.　°☆ 　. * ● *　　　°　.
+		1. View Tenant Data         4. View Past Tenant Data
+		2. View Apartment Data      5. Exit
+		3. View Transaction Data
+		SELECT OPTION: """
+
+	SET deletedatasystem TO """° 　. ● . ★ ° . *　　　°　.　°☆ 　. * ● ¸ . ★ °　★ 　° :● ★　 *  .　
+	★ ° . *　 ° .　• .　Delete Data System!:. 　 *  • ○ ° ★* • ○  ★
+	.　°☆ 　. * ● :.★ ° . *　　　°　.　°☆ 　. *.　°☆ 　. * ● *　　　°　.
+		1. Delete Tenant Data       4. Delete Past Tenant Data
+		2. Delete Apartment Data    5. Exit
+		3. Delete Transaction Data
+		SELECT OPTION: """
+
+	SET userfile TO "userfile.txt"
+	SET apartmentfile TO "Apartment Details.txt"
+	SET tenantfile TO "Tenant Details.txt"
+	SET transactionfile TO "Transaction Details.txt"
+	SET pasttenantfile TO "Past Tenant Details.txt"
+	SET continue_msg TO "Do you wish to continue operation? [Y] for Yes [N] for No:"
+	SET logout_msg TO "Are you sure you want to logout? [Y] for Yes [N] for No:"
+	SET invalid_msg TO "Invalid option! Please try again"
+	SET exit_program TO False
+	
+	DOWHILE exit_program EQUAL TO False
+		IF NO ERRORS CAPTURED THEN
+			PRINT(mainmenutitle)
+			SET continue_operation TO True
+			selection = CALL FUNCTION InputData(mainmenusystem, int, VerifyDigits)
+			IF selection EQUAL TO 1 THEN
+				DOWHILE continue_operation EQUAL TO True
+					option = CALL FUNCTION InputData(insertdatasystem, int, VerifyDigits)
+					IF option EQUAL TO 1 THEN
+						CALL FUNCTION AddTenantDetails(tenantfile)
+						CALL FUNCTION log(logfile, "info", ("New records added to " CONCATENATE tenantfile))
+
+					ELSEIF option EQUAL TO 2 THEN
+						CALL FUNCTION AddApartmentDetails(apartmentfile, tenantfile)
+						CALL FUNCTION log(logfile, "info", ("New records added to " CONCATENATE apartmentfile))
+
+					ELSEIF option EQUAL TO 3 THEN
+						CALL FUNCTION AddTransactionDetails(transactionfile, tenantfile, apartmentfile)
+						CALL FUNCTION log(logfile, "info", ("New records added to " CONCATENATE transactionfile))
+
+					ELSEIF option EQUAL TO 4 THEN
+						BREAK
+
+					ELSE
+						PRINT(invalid_msg)
+					ENDIF
+
+					continue_operation = CALL FUNCTION confirm_prompt(continue_msg)
+				ENDWHILE
+
+			ELSEIF selection EQUAL TO 2 THEN
+				DOWHILE continue_operation EQUAL TO True
+					option = CALL FUNCTION InputData(modifydatasystem, int, VerifyDigits)
+					IF option EQUAL TO 1 THEN
+						CALL FUNCTION ModifyTenantRecord(tenantfile)
+						CALL FUNCTION log(logfile, "info", ("Records modified in " CONCATENATE tenantfile))
+
+					ELSEIF option EQUAL TO 2 THEN
+						CALL FUNCTION ModifyApartmentRecord(apartmentfile, tenantfile)
+						CALL FUNCTION log(logfile, "info", ("Records modified in " CONCATENATE apartmentfile))
+
+					ELSEIF option EQUAL TO 3 THEN
+						CALL FUNCTION ModifyTransactionRecord(transactionfile)
+						CALL FUNCTION log(logfile, "info", ("Records modified in " CONCATENATE transactionfile))
+
+					ELSEIF option EQUAL TO 4 THEN
+						BREAK
+
+					ELSE
+						PRINT(invalid_msg)
+					ENDIF
+
+					continue_operation = CALL FUNCTION confirm_prompt(continue_msg)
+				ENDWHILE
+
+			ELSEIF selection EQUAL TO 3 THEN
+				DOWHILE continue_operation EQUAL TO True
+					option = CALL FUNCTION InputData(viewdatasystem, int, VerifyDigits)
+					IF option EQUAL TO 1 THEN
+						CALL FUNCTION SearchTenantDetails(tenantfile, userfile)
+						CALL FUNCTION log(logfile, "info", ("Returned records from " CONCATENATE tenantfile AND " for viewing"))
+
+					ELSEIF option EQUAL TO 2 THEN
+						CALL FUNCTION SearchApartmentDetails(apartmentfile)
+						CALL FUNCTION log(logfile, "info", ("Returned records from " CONCATENATE apartmentfile AND " for viewing"))
+
+					ELSEIF option EQUAL TO 3 THEN
+						CALL FUNCTION SearchTransactionDetails(transactionfile)
+						CALL FUNCTION log(logfile, "info", ("Returned records from " CONCATENATE transactionfile AND " for viewing"))
+
+					ELSEIF option EQUAL TO 4 THEN
+						CALL FUNCTION SearchTenantDetails(pasttenantfile)
+						CALL FUNCTION log(logfile, "info", ("Returned records from " CONCATENATE pasttenantfile AND " for viewing"))
+
+					ELSEIF option EQUAL TO 5 THEN
+						BREAK
+
+					ELSE
+						PRINT(invalid_msg)
+					ENDIF
+
+					continue_operation = CALL FUNCTION confirm_prompt(continue_msg)
+				ENDWHILE
+
+			ELSEIF selection EQUAL TO 4 THEN
+				DOWHILE continue_operation EQUAL TO True
+					option = CALL FUNCTION InputData(deletedatasystem, int, VerifyDigits)
+					IF option EQUAL TO 1 THEN
+						CALL FUNCTION DeleteTenantData(file_path, userfile, apartmentfile, pasttenantfile)
+						CALL FUNCTION log(logfile, "info", ("Deleted records in " CONCATENATE tenantfile))
+
+					ELSEIF option EQUAL TO 2 THEN
+						CALL FUNCTION DeleteApartmentData(apartmentfile)
+						CALL FUNCTION log(logfile, "info", ("Deleted records in " CONCATENATE apartmentfile))
+
+					ELSEIF option EQUAL TO 3 THEN
+						CALL FUNCTION DeleteTransactionData(transactionfile)
+						CALL FUNCTION log(logfile, "info", ("Deleted records in " CONCATENATE transactionfile))
+
+					ELSEIF option EQUAL TO 4 THEN
+						CALL FUNCTION DeletePastTenantData(pasttenantfile)
+						CALL FUNCTION log(logfile, "info", ("Deleted records in " CONCATENATE pasttenantfile))
+
+					ELSEIF option EQUAL TO 5 THEN
+						BREAK
+
+					ELSE
+						PRINT(invalid_msg)
+
+					continue_operation = CALL FUNCTION confirm_prompt(continue_msg)
+				ENDWHILE
+
+			ELSEIF selection EQUAL TO 5 THEN
+				CALL FUNCTION ModifyLoginCredentials(userfile)
+				CALL FUNCTION log(logfile, "info", ("Admin " CONCATENATE username AND "succesfully modified personal login credentials"))
+
+			ELSEIF selection EQUAL TO 6 THEN
+				exit_program = CALL FUNCTION confirm_prompt(logout_msg)
+
+			ELSE
+				PRINT("Invalid option! Please try again")
+				CALL FUNCTION log(logfile, "error", "Invalid Menu Option")
+			ENDIF
+		ELSE
+			CONVERT ERROR CAPTURED TO STRING AS e
+			CALL FUNCTION log(logfile, "warn", e)
+			PRINT(e CONCATENATE "Returning to Main Menu")
+		ENDIF
+	ENDWHILE
+
+ENDFUNCTION
+
+FUNCTION Main_Menu_T (username, logfile)
+
+	DECLARE mainmenutitle, mainmenusystem, userfile, apartmentfile, tenantfile, transactionfile, invalid_msg, logout_msg AS STRING
+	DECLARE userid, details AS ARRAY
+	DECLARE exit_program AS BOOLEAN
+	DECLARE selection AS DECIMAL
+
+	SET mainmenutitle TO """::::    ::::      :::     ::::::::::: ::::    :::  ::::    ::::  :::::::::: ::::    ::: :::    :::
+	+:+:+: :+:+:+   :+: :+:       :+:     :+:+:   :+:  +:+:+: :+:+:+ :+:        :+:+:   :+: :+:    :+:
+	+:+ +:+:+ +:+  +:+   +:+      +:+     :+:+:+  +:+  +:+ +:+:+ +:+ +:+        :+:+:+  +:+ +:+    +:+
+	+#+  +:+  +#+ +#++:++#++:     +#+     +#+ +:+ +#+  +#+  +:+  +#+ +#++:++#   +#+ +:+ +#+ +#+    +:+
+	+#+       +#+ +#+     +#+     +#+     +#+  +#+#+#  +#+       +#+ +#+        +#+  +#+#+# +#+    +#+
+	#+#       #+# #+#     #+#     #+#     #+#   #+#+#  #+#       #+# #+#        #+#   #+#+# #+#    #+#
+	###       ### ###     ### ########### ###    ####  ###       ### ########## ###    ####  ########  """
+
+	SET mainmenusystem TO """° 　. ● . ★ ° . *　　　°　.　°☆ 　. * ● ¸ . ★ °　★ 　° :●. 　 * ★　 .　 * 　.
+	★ ° . *　°　★ 　. Tenant " CONCATENATE username AND ", Welcome to Main Menu!• ○ ★ ° :● . ★ ° .  *　°
+	.　°☆ 　. * ● ¸ . 　　　★ 　° :.★ ° . *　　　°　.　°☆ 　. * ● ¸ °　.　°☆ . 
+		1. View Empty Unit           4. Change Login Credentials
+		2. View Personal Details     5. Exit
+		3. View Transaction History  
+		SELECT OPTION: """
+
+	SET userfile TO "userfile.txt"
+	SET apartmentfile TO "Apartment Details.txt"
+	SET tenantfile TO "Tenant Details.txt"
+	SET transactionfile TO "Transaction Details.txt"
+
+	FOR EACH record IN CALL FUNCTION SearchData (tenantfile, 1, username)
+		FOR EACH data IN record
+			userid APPEND data
+		ENDFOR
+	ENDFOR
+	userid = userid[0]
+	
+	SET invalid_msg TO "Invalid option! Please try again"
+	SET logout_msg TO "Are you sure you want to logout? [Y] for Yes [N] for No:"
+	SET exit_program TO False
+    
+	DOWHILE exit_program EQUAL TO False
+		IF NO ERRORS CAPTURED THEN
+			PRINT (mainmenutitle)
+			selection = CALL FUNCTION InputData (mainmenusystem, int, VerifyDigits)
+			IF selection EQUAL TO 1 THEN
+				CALL FUNCTION SearchEmptyApartment(apartmentfile)
+				CALL FUNCTION log (logfile, "info", ("Successfully returned empty units from " CONCATENATE apartmentfile AND " for viewing"))
+
+			ELSEIF selection EQUAL TO 2 THEN
+				PRINT (" ★ ° .  *　° Tenant Personal Details ● . ★ . *　°　.")
+				details = CALL FUNCTION SearchData (tenantfile, 1, username)
+				FOR EACH data IN details:
+					CALL FUNCTION PrintTenantDetails(data)
+				ENDFOR
+				CALL FUNCTION pause ()
+				PRINT ("Please inform admin for any modifications regarding personal details!")
+				CALL FUNCTION log (logfile, "info", ("Returned user personal details from " CONCATENATE tenantfile AND " for viewing"))
+
+			ELSEIF selection EQUAL TO 3 THEN
+				PRINT (" ★ ° .  *　° Transaction History ● . ★ . *　°　.")
+				CALL FUNCTION ViewUnpaidDebts(transactionfile, userid)
+				CALL FUNCTION log (logfile, "info", ("Returned transaction history of user from " CONCATENATE transactionfile AND " for viewing"))
+
+			ELSEIF selection EQUAL TO 4 THEN
+				CALL FUNCTION ModifyLoginCredentials(userfile)
+				CALL FUNCTION log (logfile, "info", ("User ID " CONCATENATE userid AND " successfully modified personal login credentials"))
+
+			ELSEIF selection EQUAL TO 5 THEN
+				exit_program = CALL FUNCTION confirm_prompt(logout_msg)
+
+			ELSE
+				PRINT (invalid_msg)
+				CALL FUNCTION log (logfile, "error", ('Failed returning system option with input "' CONCATENATE selection AND '"')
+
+		ELSE
+			CONVERT ERROR CAPTURED TO STRING AS e
+			CALL FUNCTION log (logfile, "warn", e)
+			PRINT (e CONCATENATE "Returning to Main Menu")
+		ENDIF
+	ENDWHILE
+
+ENDFUNCTION
+
+FUNCTION UMS ()
+
+	DECLARE userfile, logfile, log_directory, username, usertype AS STRING
+	DECLARE log_file_name, start_time AS DATETIME
+	DECLARE loginstatus AS BOOLEAN
+
+	SET userfile TO "userfile.txt"
+	SET start_time, log_file_name TO CURRENT DATE
+	CONVERT log_file_name INTO STRING AS log_file_name USING FORMAT ('UMS - year.month.day-hour.minute.second.txt')
+	log_directory = CALL FUNCTION createdirectory("Logs")
+	logfile = CALL FUNCTION createlogfile (log_directory, log_file_name)
+
+	IF NO ERRORS CAPTURED THEN
+		PRINT ("Welcome to User Management System!")
+		FROM CALL FUNCTION Login (userfile, 3) RETURN VALUES TO loginstatus, username, usertype
+		IF loginstatus EQUAL TO True THEN
+			IF usertype EQUAL TO "sa" THEN
+				CALL FUNCTION loading (1.5)
+				CALL FUNCTION log (logfile, "info", ("Super Admin, " CONCATENATE username AND " Login Successful"))
+				CALL FUNCTION Main_Menu_SA (logfile)
+
+			ELSEIF usertype EQUAL TO "a" THEN
+				CALL FUNCTION loading (1.5)
+				CALL FUNCTION log (logfile, "info", ("Admin, " CONCATENATE username AND " Login Successful"))
+				CALL FUNCTION Main_Menu_A (username, logfile)
+
+			ELSIF usertype EQUAL TO "t" THEN
+				CALL FUNCTION loading (1.5)
+				CALL FUNCTION log (logfile, "info", ("Tenant, " CONCATENATE username AND " Login Successful"))
+				CALL FUNCTION Main_Menu_T (username, logfile)
+			ENDIF
+
+			CALL FUNCTION log (logfile, "info", ("System exited, time elapsed: " CONCATENATE timer_end(start_time)))
+			CALL FUNCTION loading (.3)
+		ELSE
+			PRINT ("Invalid Login Attempt! Exiting System....")
+			CALL FUNCTION loading (.5)
+			CALL FUNCTION log (logfile, "critical", "Failed Unknown Login Attempt!")
+		ENDIF
+	ELSE
+		PRINT ("Emergency Quit Command Detected! Exiting System....")
+		CALL FUNCTION log (logfile, "error", ("Execution of program interrupted abruptly, time elapsed: " CONCATENATE (CALL FUNCTION timer_end(start_time))))
+	ENDIF
+
+ENDFUNCTION

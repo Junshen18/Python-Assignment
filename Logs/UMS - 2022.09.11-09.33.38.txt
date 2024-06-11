@@ -1,0 +1,7 @@
+Logging started at 11/09/2022 09:33:38
+Field: date-time type description
+
+DETAILS OF OPERATION
+
+[2022.09.11-09.33.49][INFO]Super Admin, David Login Successful
+[2022.09.11-09.36.09][ERROR]Execution of program interrupted abruptly, time elapsed: 151.212872
